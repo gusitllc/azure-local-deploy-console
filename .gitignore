@@ -1,0 +1,10 @@
+node_modules/
+*.local.*
+.env
+config.env
+*.sqlite
+*.db
+runs/
+iso/*.iso
+*.wim
+prestage.json
