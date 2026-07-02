@@ -23,8 +23,14 @@ New-Item -ItemType Directory -Force -Path $Root, "$Root\iso", "$Root\runs", "$Ro
 
 Step '1. package manager (winget/choco) + base tools'
 # winget is present on modern images; fall back to direct installers where needed.
+# Base tools + the MULTI-PROTOCOL VPN CLIENT SUITE so the worker can connect OUT to whatever VPN the
+# customer runs (WireGuard / OpenVPN / Cisco AnyConnect / GlobalProtect / Fortinet / IPsec). See
+# worker/vpn/connect.js — it dispatches to the right client per the customer profile.
 $pkgs = @('Git.Git','OpenJS.NodeJS.LTS','Python.Python.3.12','Microsoft.AzureCLI','Microsoft.PowerShell',
-          'WireGuard.WireGuard','OpenVPNTechnologies.OpenVPN')
+          'WireGuard.WireGuard',                       # WireGuard
+          'OpenVPNTechnologies.OpenVPN',               # OpenVPN
+          'OpenConnect.openconnect-gui',               # openconnect: AnyConnect / GlobalProtect / Fortinet
+          'strongSwan.strongSwan')                     # IPsec/IKEv2 (best-effort; else Windows built-in IKEv2)
 foreach($p in $pkgs){
   try { winget install --id $p --silent --accept-source-agreements --accept-package-agreements -e | Out-Null; Write-Host "  installed $p" }
   catch { Write-Warning "  winget $p failed: $($_.Exception.Message.Split([char]10)[0]) (install manually)" }

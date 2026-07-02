@@ -12,7 +12,7 @@ per successful *booking*; a run that dead-ends on a customer-side or MSFT-side g
 
 | Item | Cost | Notes |
 | --- | --- | --- |
-| **Worker devstation** (Windows) | ~$1–4 | Ephemeral: a Windows VM (e.g. B4ms-class) for the ~4–6h a build runs, or an on-prem Hyper-V devstation (near-zero). Torn down at hand-off. |
+| **Worker devstation** (Windows, **on-prem — not public cloud**) | ~$0.30–1 | Local-first (owner policy): an ephemeral **on-prem Hyper-V devstation** on our own hosts for the ~4–6h a build runs — no cloud VM. Cost is amortized hardware + power for that window, not a metered VM. Torn down at hand-off. Public cloud is an explicit exception only if no on-prem capacity is free. |
 | **Claude Code AI** | **$0 to us** | The customer plugs **their own** Claude Code OAuth token — their subscription pays for the AI. |
 | **Customer Azure resources** | **$0 to us** | KV, witness storage, the cluster itself deploy into the **customer's** subscription. |
 | **Console compute** | ~$0 marginal | One pod on the already-running on-prem `luca-capacity` AKS-Arc cluster. Fixed, not per-deploy. |
@@ -20,7 +20,7 @@ per successful *booking*; a run that dead-ends on a customer-side or MSFT-side g
 | **Stripe fee** | ~$6.10 | 2.9% + $0.30 on $200. |
 | **Support (human)** | variable | The real cost driver on non-happy-path runs (see risks). |
 
-**Marginal COGS on a clean run ≈ $8–12.** Gross margin per clean cluster ≈ **94%+**.
+**Marginal COGS on a clean run ≈ $6–8** (mostly the Stripe fee; the worker is our own on-prem hardware). Gross margin per clean cluster ≈ **96%+**.
 
 ## Fixed / infra cost
 
@@ -62,8 +62,8 @@ per successful *booking*; a run that dead-ends on a customer-side or MSFT-side g
 - **MSFT-side deployment gates** (the current "Unsupported OS Version" behavior) can block delivery
   through no fault of ours → **refund + support** exposure. Mitigation: pre-flight hardware/OS
   eligibility check *before* charging; clear refund policy; the run holds rather than churns.
-- **Worker VM cost** rises with build duration; the ~3h Deploy dominates. Using an on-prem Hyper-V
-  devstation instead of a cloud VM drops COGS toward zero.
+- **Worker cost** is on-prem hardware amortization for the ~4–6h window (owner policy: local-first,
+  not public cloud) — near-zero marginal; the ~3h Deploy dominates the wall-clock, not the bill.
 - **Chargebacks/refunds** on failed deployments — bounded by the pre-charge eligibility check and a
   "validation-passes-or-refund" guarantee option.
 

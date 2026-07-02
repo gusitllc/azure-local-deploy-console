@@ -31,11 +31,13 @@ function provider() {
 
 async function providerCreateVm({ workerId, orderId, enrollToken }) {
   const kind = provider();
-  // TODO(P4): implement real cloud VM create per PROVIDER:
-  //   - 'azure-vm'  : az vm create (Windows golden image, B4ms-class), inject
-  //                   enrollToken + console URL via custom-script/cloud-init.
-  //   - 'hyperv'    : New-VM on the on-prem host from the golden VHDX.
-  // The VM boots the worker-agent, which then POSTs the enrollToken to /workers/enroll.
+  // TODO(P4): implement the real worker create per PROVIDER. DEFAULT is on-prem (owner policy:
+  // local-first, NOT public cloud):
+  //   - 'hyperv'   : (DEFAULT) New-VM on our on-prem Hyper-V host from the golden VHDX — ephemeral,
+  //                  torn down at hand-off. Near-zero marginal cost.
+  //   - 'azure-vm' : EXCEPTION only when no on-prem capacity is free — az vm create from the golden
+  //                  image; more expensive, metered.
+  // The VM boots the worker-agent, which POSTs the enrollToken to /workers/enroll.
   if (kind === 'stub') {
     return { provider_ref: `stub-vm-${workerId}`, note: 'provider=stub (no VM created)' };
   }

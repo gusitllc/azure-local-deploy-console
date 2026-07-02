@@ -1,14 +1,14 @@
 'use strict';
 /*
- * Customer-site VPN gateway (lab stand-in for the customer's WireGuard endpoint).
+ * ⚠️ LAB MOCK — this is NOT a product. It exists only to SIMULATE a customer's VPN gateway so we can
+ * test the worker's VPN client against something. In production the customer runs their OWN VPN
+ * (WireGuard, OpenVPN, AnyConnect, GlobalProtect, IPsec…) and our worker connects to it with the
+ * multi-protocol client in worker/vpn/connect.js. Nothing here ships to a customer.
  *
- * Runs on a host that CAN reach the iDRAC out-of-band network (192.168.10.0/24) and the node
- * management network (192.168.1.0/24). Accepts an encrypted (TLS-PSK, no certs, no admin) control
- * connection from the external worker and bridges each requested stream onto the customer LAN.
- *
- * In PRODUCTION this role is played by the customer's own WireGuard gateway (blueprint 16); here it
- * is a no-admin userspace stand-in so we can prove "external worker reaches the iDRAC net only over
- * an encrypted tunnel" on hardware where we lack local admin.
+ * Mock behaviour: runs on a host that CAN reach the iDRAC out-of-band network (192.168.10.0/24) +
+ * the node management network (192.168.1.0/24); accepts an encrypted (TLS-PSK, no certs, no admin)
+ * connection and bridges each requested stream onto the LAN — i.e. it pretends to be the customer's
+ * VPN endpoint so a test worker can reach the iDRACs "as if external".
  *
  *   VPN_PSK=<shared-key> VPN_BIND=192.168.1.119 VPN_PORT=51820 \
  *   VPN_ALLOW=192.168.10.0/24,192.168.1.0/24 node gateway.js

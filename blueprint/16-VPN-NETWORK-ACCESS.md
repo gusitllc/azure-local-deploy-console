@@ -105,6 +105,42 @@ Open source, in-kernel (or `wireguard-go`/`boringtun` userspace where no module)
 modern crypto, trivial per-run key rotation, and NAT-friendly with `PersistentKeepalive`. OpenVPN is
 supported as a fallback for customers who mandate it, but WireGuard is the default.
 
+## Two connection modes (market reality: every customer's VPN is different)
+
+Customers run every kind of gateway — WireGuard, OpenVPN, Cisco AnyConnect, Palo Alto GlobalProtect,
+Fortinet, IPsec. The worker supports **both** of these, chosen per customer in the VPN Manager:
+
+### Mode A — our gateway + central relay (uniform, we control it)
+The customer runs **our tiny edge gateway** (`worker/vpn/gateway-agent.js`, one per customer, dials
+OUT to our AKS relay). The worker dials the same relay. No inbound firewall change on either side, no
+customer VPN expertise. This is the default we recommend.
+
+```
+customer gateway (edge) --out--> [ AKS relay service ] <--out-- worker
+        \_ reaches iDRAC 192.168.10.0/24                    (many customers, one relay)
+```
+
+### Mode B — bring-your-own VPN (connect to *their* gateway)
+Where the customer already has an enterprise VPN, the **worker devstation** connects to it directly
+using a **bundled multi-protocol VPN client suite** — no new thing for the customer to run:
+
+| Their gateway | Worker client (open source) |
+| --- | --- |
+| WireGuard | `wireguard` / `wireguard-go` |
+| OpenVPN | `openvpn` |
+| Cisco AnyConnect / ocserv | `openconnect` (protocol `anyconnect`) |
+| Palo Alto GlobalProtect | `openconnect` (protocol `gp`) |
+| Fortinet | `openconnect` (protocol `fortinet`) / `openfortivpn` |
+| IPsec/IKEv2 (strongSwan-compatible) | `strongswan` |
+
+The customer supplies a **VPN profile** (config + credentials); the worker imports it, brings the
+tunnel up, and — either way — runs the same reachability gate (Redfish `GET /redfish/v1` to every
+iDRAC over the tunnel) before Phase 1.
+
+**The VPN Manager records per customer:** the mode (A/B), the protocol, the gateway/relay endpoint,
+the advertised subnets, and live tunnel status. The engine is identical downstream — it just gets L3
+reach to the iDRAC/mgmt subnets, however that reach was established.
+
 ## Customer-side options (how they give us reach)
 
 1. **Their existing VPN** — they hand us a WireGuard (or OpenVPN) client profile that already routes
