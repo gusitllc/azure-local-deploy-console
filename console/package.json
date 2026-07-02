@@ -1,0 +1,17 @@
+{
+  "name": "azlocal-deploy-console",
+  "version": "1.0.0",
+  "description": "Azure Local Deployment Console — multi-cluster pipeline with intervention gates, wrapping the azure-local-2node-factory engine.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0"
+  },
+  "license": "MIT"
+}
