@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: deploy-console
+  namespace: azlocal-console
+  annotations:
+    # cert-manager issues + renews the TLS cert for the console host.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # The Stripe webhook posts a raw body; keep the proxy body buffer generous.
+    nginx.ingress.kubernetes.io/proxy-body-size: "2m"
+    # SSE (run event stream) needs buffering off and long read timeouts.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - console.azurestack.nyc
+      secretName: deploy-console-tls
+  rules:
+    - host: console.azurestack.nyc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: deploy-console
+                port:
+                  number: 80

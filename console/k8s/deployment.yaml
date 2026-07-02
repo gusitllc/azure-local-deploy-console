@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-console
+  namespace: azlocal-console
+  labels:
+    app: deploy-console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deploy-console
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: deploy-console
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: deploy-console
+          image: REGISTRY/azlocal-deploy-console:latest # set by CI at deploy time
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: NODE_ENV
+              value: "production"
+            # PROVIDER selects the worker VM backend; 'stub' for dev (no VM created).
+            - name: PROVIDER
+              value: "stub"
+          envFrom:
+            - secretRef:
+                name: deploy-console-secrets # DATABASE_URL, ADMIN_KEY, STRIPE_*
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            - name: runs
+              mountPath: /data/runs
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: runs
+          persistentVolumeClaim:
+            claimName: deploy-console-runs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: deploy-console-runs
+  namespace: azlocal-console
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

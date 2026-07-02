@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operator Console — Azure Local</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font:15px/1.5 system-ui,sans-serif; background:#0b1020; color:#e8ecf5; }
+    header { padding:16px 24px; background:#111830; border-bottom:1px solid #232b45; }
+    header h1 { font-size:1.1rem; margin:0; }
+    main { max-width:1000px; margin:0 auto; padding:24px; }
+    .card { background:#111830; border:1px solid #232b45; border-radius:10px; padding:16px; margin-bottom:16px; }
+    label { display:block; font-size:.85rem; color:#9aa5c0; margin:.4rem 0 .2rem; }
+    input { width:100%; box-sizing:border-box; padding:.55rem .7rem; border-radius:6px;
+      border:1px solid #2a3350; background:#0b1020; color:#e8ecf5; }
+    button { margin-top:.8rem; padding:.55rem 1rem; border:0; border-radius:6px;
+      background:#3b82f6; color:#fff; font-weight:600; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; }
+    th,td { text-align:left; padding:.4rem .6rem; border-bottom:1px solid #232b45; }
+    .msg { margin-top:.6rem; font-size:.85rem; }
+    .ok { color:#4ade80; } .err { color:#f87171; }
+    pre { background:#0b1020; padding:.6rem; border-radius:6px; overflow:auto; max-height:280px; }
+  </style>
+</head>
+<body>
+  <header><h1>Operator Console · Azure Local Deployment</h1></header>
+  <main>
+    <div class="card" id="loginCard">
+      <label for="u">Username</label><input id="u" autocomplete="username">
+      <label for="p">Password</label><input id="p" type="password" autocomplete="current-password">
+      <button id="loginBtn">Sign in</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+
+    <div class="card" id="runsCard" hidden>
+      <h2 style="margin-top:0;font-size:1rem;">Runs</h2>
+      <button id="refreshBtn">Refresh</button>
+      <table><thead><tr><th>ID</th><th>Cluster</th><th>Status</th><th>Phase</th></tr></thead>
+        <tbody id="runsBody"></tbody></table>
+    </div>
+  </main>
+
+  <script>
+    // Minimal vanilla-JS operator shell. esc() before any DOM injection (XSS).
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    async function api(path, opts) {
+      var r = await fetch('/api' + path, Object.assign({
+        headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      }, opts || {}));
+      return r.json();
+    }
+    var loginMsg = document.getElementById('loginMsg');
+    document.getElementById('loginBtn').onclick = async function () {
+      loginMsg.textContent = '';
+      var body = { username: document.getElementById('u').value, password: document.getElementById('p').value };
+      var res = await api('/auth/login', { method: 'POST', body: JSON.stringify(body) });
+      if (res && res.ok) {
+        document.getElementById('loginCard').hidden = true;
+        document.getElementById('runsCard').hidden = false;
+        loadRuns();
+      } else {
+        loginMsg.className = 'msg err';
+        loginMsg.textContent = (res && res.error) || 'sign-in failed';
+      }
+    };
+    async function loadRuns() {
+      var res = await api('/runs');
+      var body = document.getElementById('runsBody');
+      body.innerHTML = '';
+      if (!res || !res.ok) return;
+      (res.runs || []).forEach(function (run) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + esc(run.id) + '</td><td>' + esc(run.cluster_id) +
+          '</td><td>' + esc(run.status) + '</td><td>' + esc(run.current_phase) + '</td>';
+        body.appendChild(tr);
+      });
+    }
+    document.getElementById('refreshBtn').onclick = loadRuns;
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: deploy-console
+  namespace: azlocal-console
+  labels:
+    app: deploy-console
+spec:
+  type: ClusterIP
+  selector:
+    app: deploy-console
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
